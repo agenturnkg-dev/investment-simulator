@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Investment Simulator — Next-Gen Finance</title>
+  <meta name="description"
+    content="Interaktiver Investment-Rechner mit Zinseszins, Portfolio-Tiers und visueller Wachstumskurve." />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#0a0b1e" />
+  <meta property="og:title" content="Investment Simulator — Next-Gen Finance" />
+  <meta property="og:description"
+    content="Simuliere dein Investment und beobachte die Kraft des Zinseszins in Echtzeit." />
+  <meta property="og:type" content="website" />
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 (Production) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel Standalone -->
+  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    :root {
+      --bg-deep: #0a0b1e;
+      --bg-card: rgba(255, 255, 255, 0.04);
+      --bg-card-hover: rgba(255, 255, 255, 0.06);
+      --border-card: rgba(255, 255, 255, 0.08);
+      --accent: #ff8c00;
+      --accent-glow: rgba(255, 140, 0, 0.35);
+      --accent-glow-strong: rgba(255, 140, 0, 0.5);
+      --accent-soft: rgba(255, 140, 0, 0.12);
+      --text-primary: #ffffff;
+      --text-secondary: #8b8fa3;
+      --text-tertiary: #5a5e73;
+      --green: #00e676;
+      --green-soft: rgba(0, 230, 118, 0.12);
+      --red: #ff5252;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* Ambient background glow */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(255, 140, 0, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Glass card */
+    .glass-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+    }
+
+    /* Custom Slider */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      outline: none;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 3px solid #0a0b1e;
+      box-shadow: 0 0 20px var(--accent-glow), 0 0 40px rgba(255, 140, 0, 0.15);
+      cursor: grab;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 28px var(--accent-glow-strong), 0 0 50px rgba(255, 140, 0, 0.2);
+    }
+
+    input[type="range"]::-webkit-slider-thumb:active {
+      cursor: grabbing;
+      transform: scale(1.08);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 3px solid #0a0b1e;
+      box-shadow: 0 0 20px var(--accent-glow);
+      cursor: grab;
+    }
+
+    /* Remove number input arrows */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fade-in-up {
+      animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .modal-backdrop {
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    @keyframes pulse-soft {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.6;
+      }
+    }
+
+    .pulse-soft {
+      animation: pulse-soft 2s ease-in-out infinite;
+    }
+
+    @keyframes glowPulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 20px var(--accent-glow), 0 0 40px rgba(255, 140, 0, 0.08);
+      }
+
+      50% {
+        box-shadow: 0 0 30px var(--accent-glow-strong), 0 0 60px rgba(255, 140, 0, 0.15);
+      }
+    }
+
+    .glow-pulse {
+      animation: glowPulse 3s ease-in-out infinite;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Chart container */
+    .chart-container {
+      position: relative;
+      width: 100%;
+      height: 340px;
+    }
+
+    .chart-container svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    /* Scrollbar for modal */
+    .custom-scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-type="module">
+    const { useState, useMemo, useEffect, useRef } = React;
+
+    // ─────────────────────── DATA ───────────────────────
+    const PORTFOLIOS = [
+      { name: "Test Portfolio", min: 100, max: 500, daily: 0.0030, days: 30, color: "#7b8794" },
+      { name: "HealthHorizon Fund", min: 750, max: 14999, daily: 0.0045, days: 270, color: "#1e40af" },
+      { name: "ESG Innovation Fund", min: 15000, max: 49999, daily: 0.0065, days: 270, color: "#0d9488" },
+      { name: "Neural Nexus Fund", min: 50000, max: 249999, daily: 0.0085, days: 270, color: "#7c3aed" },
+      { name: "Urban Shelter Fund", min: 250000, max: 749999, daily: 0.0090, days: 240, color: "#dc2626" },
+      { name: "Quantum Tech Fund", min: 750000, max: 1499999, daily: 0.0095, days: 180, color: "#ff8c00" },
+      { name: "Alpha Apex Fund", min: 1500000, max: 10000000, daily: 0.0180, days: 120, color: "#00e676" },
+    ];
+
+    function getPlanForAmount(a) { return PORTFOLIOS.find(p => a >= p.min && a <= p.max) || null; }
+    function getNextTier(a) { return [...PORTFOLIOS].sort((x, y) => x.min - y.min).find(p => p.min > a) || null; }
+    function isInGap(a) { return a >= PORTFOLIOS[0].min && !getPlanForAmount(a); }
+    function isTestPlan(plan) { return plan && plan.name === 'Test Portfolio'; }
+
+    // ─────────────────────── CALCULATOR ───────────────────────
+    // Supports two-phase mode + 10% reinvestment tracking
+    // Phase 1 of test plans is ALWAYS linear (first 30 days), even if boosters push capital > 750 €.
+    // Compound and top-ups only activate from phase1.days+1 onward.
+    function getThresholdForCapital(capital) {
+      const tier = getPlanForAmount(capital);
+      return tier ? tier.min * 0.10 : 75; // fallback 75 €
+    }
+
+    function calculateGrowth({ amount, compound, boosters = [], phase1, phase2 }) {
+      const data = [];
+      const totalDays = phase2 ? phase1.days + phase2.days : phase1.days;
+      let capital = amount, totalInvested = amount;
+      let currentDaily = phase1.daily;
+      let profitSinceLastTopup = 0;
+      let threshold = getThresholdForCapital(capital);
+
+      for (let day = 0; day <= totalDays; day++) {
+        // Phase transition: switch rate at upgrade boundary
+        if (phase2 && day === phase1.days + 1) {
+          currentDaily = phase2.daily;
+        }
+
+        // Handle boosters
+        for (const b of boosters.filter(b => b.day === day)) {
+          capital += b.amount; totalInvested += b.amount;
+          const np = getPlanForAmount(capital);
+          if (np && np.daily > currentDaily) currentDaily = np.daily;
+          threshold = getThresholdForCapital(capital);
+        }
+
+        // Determine if compound is active on this day
+        // If two-phase (test plan): linear during phase1 (days 0..phase1.days), compound only in phase2
+        const inTestPhase = phase2 && day <= phase1.days;
+        const dayCompound = compound && !inTestPhase;
+
+        // Check for reinvestment top-up (only when dayCompound AND capital ≥ 750 €)
+        let topup = null;
+        if (dayCompound && day > 0 && capital >= 750 && profitSinceLastTopup >= threshold) {
+          // Transfer the FULL accumulated profit (not just multiples of threshold)
+          topup = Math.round(profitSinceLastTopup * 100) / 100;
+          profitSinceLastTopup = 0;
+          threshold = getThresholdForCapital(capital);
+        }
+
+        data.push({ day, capital: Math.round(capital * 100) / 100, invested: totalInvested, topup });
+
+        if (day < totalDays) {
+          const prevCapital = capital;
+          capital = dayCompound ? capital * (1 + currentDaily) : capital + amount * currentDaily;
+          if (dayCompound && capital >= 750) {
+            const dailyProfit = capital - prevCapital;
+            profitSinceLastTopup += dailyProfit;
+          }
+          // Auto-upgrade rate when capital crosses into a higher tier
+          const newTier = getPlanForAmount(capital);
+          if (newTier && newTier.daily > currentDaily) {
+            currentDaily = newTier.daily;
+            threshold = getThresholdForCapital(capital);
+          }
+        }
+      }
+      return data;
+    }
+
+    // ─────────────────────── HOOKS ───────────────────────
+    function useAnimatedCounter(target, duration = 800) {
+      const [display, setDisplay] = useState(target);
+      const animRef = useRef(null), startRef = useRef(target), startTimeRef = useRef(null);
+      useEffect(() => {
+        if (animRef.current) cancelAnimationFrame(animRef.current);
+        startRef.current = display; startTimeRef.current = null;
+        const animate = (ts) => {
+          if (!startTimeRef.current) startTimeRef.current = ts;
+          const p = Math.min((ts - startTimeRef.current) / duration, 1);
+          const eased = 1 - Math.pow(1 - p, 3);
+          setDisplay(startRef.current + (target - startRef.current) * eased);
+          if (p < 1) animRef.current = requestAnimationFrame(animate);
+        };
+        animRef.current = requestAnimationFrame(animate);
+        return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
+      }, [target, duration]);
+      return display;
+    }
+
+    // ─────────────────────── FORMAT ───────────────────────
+    const fmtC = v => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
+    const fmtCF = v => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+    const fmtInput = v => v ? new Intl.NumberFormat('de-DE').format(v) : '';
+
+    // ─────────────────────── SLIDER SCALE ───────────────────────
+    const S_MIN = 100, S_MAX = 2000000;
+    const s2a = v => { const ml = Math.log(S_MIN), xl = Math.log(S_MAX); return Math.round(Math.exp(ml + (v / 1000) * (xl - ml))); };
+    const a2s = a => { const ml = Math.log(S_MIN), xl = Math.log(S_MAX); return Math.round(((Math.log(Math.max(a, S_MIN)) - ml) / (xl - ml)) * 1000); };
+
+    // ─────────────────────── SVG CHART ───────────────────────
+    function GrowthChart({ data, compound, days }) {
+      const ref = useRef(null);
+      const [dims, setDims] = useState({ w: 600, h: 320 });
+      const [hover, setHover] = useState(null);
+      const touchActive = useRef(false);
+
+      useEffect(() => {
+        if (!ref.current) return;
+        const obs = new ResizeObserver(e => { for (const en of e) setDims({ w: en.contentRect.width, h: en.contentRect.height }); });
+        obs.observe(ref.current);
+        return () => obs.disconnect();
+      }, []);
+
+      if (!data || data.length === 0) return null;
+      const pad = { top: 20, right: 20, bottom: 40, left: 70 };
+      const { w, h } = dims;
+      const pW = w - pad.left - pad.right, pH = h - pad.top - pad.bottom;
+      const maxC = Math.max(...data.map(d => d.capital));
+      const minI = Math.min(...data.map(d => d.invested));
+      const yMin = Math.floor(minI * 0.95), yMax = Math.ceil(maxC * 1.05), yR = yMax - yMin || 1;
+      const xS = d => pad.left + (d / days) * pW;
+      const yS = v => pad.top + pH - ((v - yMin) / yR) * pH;
+
+      // Color helper: returns the portfolio tier color for a given capital
+      const getColorForCap = (cap) => {
+        const t = getPlanForAmount(cap);
+        return t ? t.color : '#7b8794';
+      };
+
+      const capLine = data.map((d, i) => (i === 0 ? 'M' : 'L') + xS(d.day).toFixed(1) + ',' + yS(d.capital).toFixed(1)).join(' ');
+      const invLine = data.map((d, i) => (i === 0 ? 'M' : 'L') + xS(d.day).toFixed(1) + ',' + yS(d.invested).toFixed(1)).join(' ');
+      const capArea = capLine + ' L' + xS(data[data.length - 1].day).toFixed(1) + ',' + (pad.top + pH) + ' L' + xS(0).toFixed(1) + ',' + (pad.top + pH) + ' Z';
+      const invArea = invLine + ' L' + xS(data[data.length - 1].day).toFixed(1) + ',' + (pad.top + pH) + ' L' + xS(0).toFixed(1) + ',' + (pad.top + pH) + ' Z';
+
+      // Build multi-color segments: group consecutive points by tier color
+      const capSegments = [];
+      let curSeg = null;
+      data.forEach((d, i) => {
+        const c = getColorForCap(d.capital);
+        if (!curSeg || curSeg.color !== c) {
+          // Start new segment, overlapping last point of previous segment for continuity
+          const newSeg = { color: c, points: [] };
+          if (curSeg && curSeg.points.length > 0) {
+            newSeg.points.push(curSeg.points[curSeg.points.length - 1]);
+          }
+          capSegments.push(newSeg);
+          curSeg = newSeg;
+        }
+        curSeg.points.push(d);
+      });
+
+      // Top-up event markers
+      const topupEvents = data.filter(d => d.topup);
+
+      const yTicks = Array.from({ length: 5 }, (_, i) => yMin + (yR * i) / 4);
+      const xTicks = []; const xStep = Math.ceil(days / 5);
+      for (let i = 0; i <= days; i += xStep) xTicks.push(i);
+      if (xTicks[xTicks.length - 1] !== days) xTicks.push(days);
+
+      const fmtAx = v => v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'k' : Math.round(v).toString();
+
+      // Shared hover resolver for mouse + touch
+      const resolveHover = (clientX) => {
+        if (!ref.current) return;
+        const r = ref.current.getBoundingClientRect();
+        const ratio = w / r.width;
+        const x = (clientX - r.left) * ratio;
+        const d = Math.round(((x - pad.left) / pW) * days);
+        const cl = Math.max(0, Math.min(days, d));
+        setHover(data.find(p => p.day === cl) || data[data.length - 1]);
+      };
+
+      const onMouseMove = e => resolveHover(e.clientX);
+      const onMouseLeave = () => setHover(null);
+
+      const onTouchStart = e => { touchActive.current = true; resolveHover(e.touches[0].clientX); };
+      const onTouchMove = e => { if (!touchActive.current) return; e.preventDefault(); resolveHover(e.touches[0].clientX); };
+      const onTouchEnd = () => { touchActive.current = false; setTimeout(() => { if (!touchActive.current) setHover(null); }, 1500); };
+
+      // Smart tooltip positioning — taller when topup is shown
+      const tooltipW = 200, tooltipH = hover && hover.topup ? 105 : 80;
+      const getTooltipPos = () => {
+        if (!hover) return {};
+        const px = xS(hover.day), py = yS(hover.capital);
+        let left = px + 14;
+        if (left + tooltipW > w - 10) left = px - tooltipW - 14;
+        left = Math.max(8, Math.min(left, w - tooltipW - 8));
+        let top = py - tooltipH - 10;
+        if (top < 4) top = py + 20;
+        return { left, top };
+      };
+
+      return (
+        <div ref={ref} className="chart-container"
+          onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}
+          onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+          style={{ touchAction: 'pan-y' }}
+        >
+          <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <linearGradient id="gCap" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#ff8c00" stopOpacity="0.25" />
+                <stop offset="100%" stopColor="#ff8c00" stopOpacity="0.0" />
+              </linearGradient>
+              <linearGradient id="gInv" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#5a5e73" stopOpacity="0.15" />
+                <stop offset="100%" stopColor="#5a5e73" stopOpacity="0.0" />
+              </linearGradient>
+              <filter id="glowLine">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+              <filter id="glowDot">
+                <feGaussianBlur stdDeviation="2" result="blur" />
+                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+            </defs>
+
+            {/* Grid */}
+            {yTicks.map((v, i) => (
+              <line key={i} x1={pad.left} x2={w - pad.right} y1={yS(v)} y2={yS(v)} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+            ))}
+            {/* Y labels */}
+            {yTicks.map((v, i) => (
+              <text key={i} x={pad.left - 10} y={yS(v) + 4} textAnchor="end" fill="#5a5e73" fontSize="11" fontFamily="Inter, sans-serif">{fmtAx(v)}</text>
+            ))}
+            {/* X labels */}
+            {xTicks.map((d, i) => (
+              <text key={i} x={xS(d)} y={h - 10} textAnchor="middle" fill="#5a5e73" fontSize="11" fontFamily="Inter, sans-serif">T{d}</text>
+            ))}
+
+            {/* Areas */}
+            <path d={invArea} fill="url(#gInv)" />
+            <path d={invLine} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
+            <path d={capArea} fill="url(#gCap)" />
+            {/* Multi-color tier segments */}
+            {capSegments.map((seg, i) => {
+              const segPath = seg.points.map((d, j) => (j === 0 ? 'M' : 'L') + xS(d.day).toFixed(1) + ',' + yS(d.capital).toFixed(1)).join(' ');
+              return <path key={'seg' + i} d={segPath} fill="none" stroke={seg.color} strokeWidth="2.5" filter="url(#glowLine)" />;
+            })}
+
+            {/* Reinvestment top-up markers — small orange diamonds */}
+            {topupEvents.map((d, i) => {
+              const cx = xS(d.day), cy = yS(d.capital);
+              return (
+                <g key={'tu' + i} filter="url(#glowDot)">
+                  <polygon
+                    points={`${cx},${cy - 5} ${cx + 4},${cy} ${cx},${cy + 5} ${cx - 4},${cy}`}
+                    fill="#ff8c00" stroke="#0a0b1e" strokeWidth="1.5"
+                  />
+                </g>
+              );
+            })}
+
+            {/* Invisible fat hit area for easier touch/click targeting */}
+            <path d={capLine} fill="none" stroke="transparent" strokeWidth="24" style={{ cursor: 'crosshair' }} />
+
+            {/* Hover indicators */}
+            {hover && (<>
+              <line x1={xS(hover.day)} x2={xS(hover.day)} y1={pad.top} y2={pad.top + pH} stroke="rgba(255,140,0,0.25)" strokeWidth="1" strokeDasharray="4 4" />
+              <circle cx={xS(hover.day)} cy={yS(hover.capital)} r="7" fill={getColorForCap(hover.capital)} stroke="#0a0b1e" strokeWidth="3" />
+              <circle cx={xS(hover.day)} cy={yS(hover.capital)} r="14" fill="none" stroke={getColorForCap(hover.capital) + '33'} strokeWidth="1" />
+              <circle cx={xS(hover.day)} cy={yS(hover.invested)} r="5" fill="#5a5e73" stroke="#0a0b1e" strokeWidth="2" />
+            </>)}
+          </svg>
+
+          {/* Tooltip */}
+          {hover && (() => {
+            const pos = getTooltipPos();
+            return (
+              <div style={{
+                position: 'absolute',
+                left: pos.left,
+                top: pos.top,
+                background: 'rgba(15,16,36,0.95)',
+                backdropFilter: 'blur(16px)',
+                border: hover.topup ? '1px solid rgba(255,140,0,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 14, padding: '12px 16px',
+                boxShadow: hover.topup ? '0 8px 32px rgba(255,140,0,0.15)' : '0 8px 32px rgba(0,0,0,0.5)',
+                pointerEvents: 'none', zIndex: 10,
+                maxWidth: tooltipW,
+              }}>
+                <p style={{ fontSize: 11, color: '#5a5e73', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tag {hover.day}</p>
+                <p style={{ fontSize: 15, color: '#ff8c00', margin: '4px 0 0', fontWeight: 800 }}>{fmtCF(hover.capital)}</p>
+                <p style={{ fontSize: 11, color: '#8b8fa3', margin: '3px 0 0' }}>Investiert: {fmtCF(hover.invested)}</p>
+                {hover.topup && (
+                  <p style={{ fontSize: 11, color: '#00e676', margin: '5px 0 0', fontWeight: 700 }}>
+                    ◆ Reinvestition (Top-up): +{fmtCF(hover.topup)}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      );
+    }
+
+    // ─────────────────────── TOGGLE ───────────────────────
+    function CompoundToggle({ compound, setCompound, enabled }) {
+      const [showHint, setShowHint] = useState(false);
+      const hintTimer = useRef(null);
+
+      const handleClick = () => {
+        if (enabled) {
+          setCompound(!compound);
+        } else {
+          setShowHint(true);
+          if (hintTimer.current) clearTimeout(hintTimer.current);
+          hintTimer.current = setTimeout(() => setShowHint(false), 3000);
+        }
+      };
+
+      return (
+        <div className="relative">
+          <button onClick={handleClick}
+            onMouseEnter={() => { if (!enabled) setShowHint(true); }}
+            onMouseLeave={() => setShowHint(false)}
+            className="flex items-center gap-3" style={{ border: 'none', background: 'none', padding: 0, cursor: enabled ? 'pointer' : 'not-allowed', opacity: enabled ? 1 : 0.4 }}
+          >
+            <div className="relative rounded-full transition-all duration-300" style={{
+              width: 56, height: 30,
+              backgroundColor: enabled && compound ? '#ff8c00' : 'rgba(255,255,255,0.1)',
+              boxShadow: enabled && compound ? '0 0 16px rgba(255,140,0,0.35)' : 'none',
+            }}>
+              <div className="absolute rounded-full shadow-md transition-all duration-300" style={{
+                width: 22, height: 22, top: 4,
+                left: enabled && compound ? 30 : 4,
+                background: enabled && compound ? '#0a0b1e' : '#5a5e73',
+              }} />
+            </div>
+            <span className="text-sm font-medium select-none" style={{ color: enabled ? '#8b8fa3' : '#3d3f52' }}>
+              Zinseszins {enabled && compound ? 'aktiv' : 'inaktiv'}
+            </span>
+          </button>
+          {showHint && !enabled && (
+            <div className="absolute left-0 top-full mt-2 rounded-xl px-4 py-2.5 text-xs font-medium fade-in-up" style={{
+              background: 'rgba(15,16,36,0.95)', border: '1px solid rgba(255,140,0,0.2)',
+              color: '#8b8fa3', whiteSpace: 'nowrap', zIndex: 20,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+            }}>
+              Der automatische Zinseszins ist erst ab einer Anlagesumme von <strong style={{ color: '#ff8c00' }}>750 €</strong> möglich.
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ─────────────────────── BOOSTER MODAL ───────────────────────
+    function BoosterModal({ show, onClose, boosters, setBoosters, maxDays }) {
+      const [day, setDay] = useState('');
+      const [amt, setAmt] = useState('');
+      if (!show) return null;
+
+      const add = () => {
+        const d = parseInt(day), a = parseFloat(amt);
+        if (isNaN(d) || isNaN(a) || d < 1 || d > maxDays || a < 1) return;
+        setBoosters([...boosters, { day: d, amount: a }]);
+        setDay(''); setAmt('');
+      };
+      const rm = i => setBoosters(boosters.filter((_, idx) => idx !== i));
+
+      const inputCls = "w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all";
+      const inputStyle = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff' };
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)' }} onClick={onClose}>
+          <div className="glass-card rounded-3xl shadow-2xl w-full max-w-md p-8 fade-in-up" style={{ background: 'rgba(15,16,36,0.95)', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center glow-pulse" style={{ background: 'linear-gradient(135deg, #ff8c00, #ff6b00)' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0b1e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" /><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" /><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" /><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" /></svg>
+                </div>
+                <h3 className="text-xl font-bold text-white">Investment-Booster</h3>
+              </div>
+              <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer" style={{ border: 'none', background: 'rgba(255,255,255,0.06)', color: '#8b8fa3' }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" x2="6" y1="6" y2="18" /><line x1="6" x2="18" y1="6" y2="18" /></svg>
+              </button>
+            </div>
+
+            <p className="text-sm mb-6" style={{ color: '#5a5e73' }}>Füge zusätzliche Kapitalzuflüsse zu bestimmten Zeitpunkten hinzu. Erreicht dein Kapital eine neue Stufe, wird die Rate automatisch angepasst.</p>
+
+            <div className="flex gap-3 mb-6">
+              <div className="flex-1">
+                <label className="text-xs font-medium mb-1 block" style={{ color: '#5a5e73' }}>Tag (1–{maxDays})</label>
+                <input type="number" min="1" max={maxDays} value={day} onChange={e => setDay(e.target.value)} placeholder={`Tag 1–${maxDays}`} className={inputCls} style={inputStyle} />
+              </div>
+              <div className="flex-1">
+                <label className="text-xs font-medium mb-1 block" style={{ color: '#5a5e73' }}>Betrag (€)</label>
+                <input type="number" min="1" value={amt} onChange={e => setAmt(e.target.value)} placeholder="z.B. 5000" className={inputCls} style={inputStyle} />
+              </div>
+              <div className="flex items-end">
+                <button onClick={add} className="px-4 py-3 rounded-xl font-semibold flex items-center gap-1 cursor-pointer transition-all" style={{ border: 'none', background: '#ff8c00', color: '#0a0b1e', boxShadow: '0 0 16px rgba(255,140,0,0.3)' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="5" y2="19" /><line x1="5" x2="19" y1="12" y2="12" /></svg>
+                </button>
+              </div>
+            </div>
+
+            {boosters.length === 0 ? (
+              <div className="text-center py-8 text-sm" style={{ color: '#5a5e73' }}>Noch keine Booster hinzugefügt</div>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto custom-scroll">
+                {boosters.map((b, i) => (
+                  <div key={i} className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                    <div>
+                      <span className="text-sm font-semibold text-white">Tag {b.day}</span>
+                      <span className="text-sm ml-3" style={{ color: '#ff8c00' }}>+{fmtC(b.amount)}</span>
+                    </div>
+                    <button onClick={() => rm(i)} className="transition-colors cursor-pointer" style={{ border: 'none', background: 'none', color: '#5a5e73' }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {boosters.length > 0 && (
+              <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: '#5a5e73' }}>Gesamt-Booster</span>
+                  <span className="font-bold" style={{ color: '#ff8c00' }}>{fmtC(boosters.reduce((s, b) => s + b.amount, 0))}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Fertig Button */}
+            <div className="mt-6 flex justify-end">
+              <button onClick={onClose} className="px-8 py-3 rounded-xl text-sm font-bold cursor-pointer transition-all" style={{
+                border: 'none', background: 'linear-gradient(135deg, #ff8c00, #ff6b00)', color: '#fff',
+                boxShadow: '0 0 20px rgba(255,140,0,0.25)', letterSpacing: '0.02em',
+              }}>
+                Fertig ✓
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ─────────────────────── HERO STAT ───────────────────────
+    function HeroStat({ label, value, variant, icon, subtitle }) {
+      const av = useAnimatedCounter(value, 900);
+      const rounded = Math.round(av);
+      const isLarge = Math.abs(rounded) >= 1000000;
+      const styles = {
+        grey: { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.06)', val: '#8b8fa3', lbl: '#5a5e73' },
+        dark: { bg: 'rgba(255,140,0,0.08)', border: 'rgba(255,140,0,0.15)', val: '#ffffff', lbl: '#ff8c00' },
+        green: { bg: 'rgba(0,230,118,0.06)', border: 'rgba(0,230,118,0.12)', val: '#00e676', lbl: 'rgba(0,230,118,0.6)' },
+      };
+      const s = styles[variant];
+      return (
+        <div className="flex-1 rounded-2xl p-6 md:p-7 transition-all duration-500 hover:scale-[1.02]" style={{ background: s.bg, border: `1px solid ${s.border}`, minWidth: 0, overflow: 'hidden' }}>
+          <div className="flex items-center gap-2 mb-3">
+            <span style={{ color: s.lbl }}>{icon}</span>
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: s.lbl }}>{label}</span>
+          </div>
+          <div className={`tabular-nums font-black leading-tight ${isLarge ? 'text-lg md:text-xl lg:text-2xl' : 'text-2xl md:text-3xl lg:text-4xl'}`} style={{ color: s.val }}>
+            {fmtC(rounded)}
+          </div>
+          {subtitle && <p className="text-xs mt-2 font-medium" style={{ color: s.lbl }}>{subtitle}</p>}
+        </div>
+      );
+    }
+
+    // ─────────────────────── APP ───────────────────────
+    function App() {
+      const [amount, setAmount] = useState(S_MIN);
+      const [sliderVal, setSliderVal] = useState(0);
+      const [compound, setCompound] = useState(true);
+      const [boosters, setBoosters] = useState([]);
+      const [showModal, setShowModal] = useState(false);
+      const [inputFocused, setInputFocused] = useState(false);
+
+      // Dynamic loading: animate slider from 100 € to 15.000 € on first render
+      const introPlayed = useRef(false);
+      useEffect(() => {
+        if (introPlayed.current) return;
+        introPlayed.current = true;
+        const TARGET = 15000;
+        const DURATION = 1500;
+        const startSlider = 0;
+        const endSlider = a2s(TARGET);
+        let startTime = null;
+        const animate = (ts) => {
+          if (!startTime) startTime = ts;
+          const p = Math.min((ts - startTime) / DURATION, 1);
+          const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+          const sv = Math.round(startSlider + (endSlider - startSlider) * eased);
+          setSliderVal(sv);
+          // On final frame, snap to exact TARGET to avoid log-scale rounding
+          setAmount(p >= 1 ? TARGET : s2a(sv));
+          if (p < 1) requestAnimationFrame(animate);
+        };
+        requestAnimationFrame(animate);
+      }, []);
+
+      const handleSlider = e => { const v = parseInt(e.target.value); setSliderVal(v); setAmount(s2a(v)); };
+      const handleInput = e => { const r = e.target.value; if (r === '') { setAmount(0); return; } const v = parseInt(r) || 0; setAmount(v); setSliderVal(a2s(Math.max(S_MIN, Math.min(S_MAX, v)))); };
+      const DEFAULT_AMOUNT = 15000;
+      const handleBlur = () => { setInputFocused(false); const v = amount || 0; const c = v < S_MIN ? DEFAULT_AMOUNT : Math.min(S_MAX, v); setAmount(c); setSliderVal(a2s(c)); };
+      const handleFocus = () => { setInputFocused(true); setAmount(0); };
+
+      const plan = getPlanForAmount(amount);
+      const gap = isInGap(amount);
+      const nextTier = getNextTier(amount);
+
+      // Test vs Direct logic — upgrade only when total capital ≥ 750 €
+      const isTest = isTestPlan(plan);
+      const boosterTotal = boosters.reduce((s, b) => s + b.amount, 0);
+      const effectiveCapital = amount + boosterTotal;
+      const qualifiesForUpgrade = isTest && effectiveCapital >= 750;
+      const upgradePlan = qualifiesForUpgrade ? getNextTier(amount) : null;
+      const totalDays = plan ? (upgradePlan ? plan.days + upgradePlan.days : plan.days) : 0;
+      const displayRate = upgradePlan ? upgradePlan.daily : (plan ? plan.daily : 0);
+
+      // Live progress: determine effective tier based on total capital
+      const effectivePlan = getPlanForAmount(effectiveCapital);
+
+      // Compound only allowed when capital ≥ 750 €
+      const effectiveCompound = compound && effectiveCapital >= 750;
+
+      const growthData = useMemo(() => {
+        if (!plan) return [];
+        const phase1 = { daily: plan.daily, days: plan.days };
+        const phase2 = isTest && upgradePlan ? { daily: upgradePlan.daily, days: upgradePlan.days } : null;
+        return calculateGrowth({ amount, compound: effectiveCompound, phase1, phase2, boosters: boosters.filter(b => b.day <= totalDays) });
+      }, [amount, plan, effectiveCompound, boosters, upgradePlan, totalDays]);
+
+      const finalCap = growthData.length > 0 ? growthData[growthData.length - 1].capital : amount;
+      const totalInv = amount + boosters.reduce((s, b) => s + b.amount, 0);
+      const profit = finalCap - totalInv;
+      const sliderPct = (sliderVal / 1000) * 100;
+
+      const ic = (paths, size = 16) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{paths}</svg>
+      );
+
+      return (
+        <div className="min-h-screen relative" style={{ background: '#0a0b1e', zIndex: 1 }}>
+
+          {/* ── HEADER ── */}
+          <header className="pt-14 pb-6 px-6 text-center relative">
+            <div className="inline-flex items-center gap-2.5 rounded-full px-5 py-2 mb-8" style={{ background: 'rgba(255,140,0,0.08)', border: '1px solid rgba(255,140,0,0.15)' }}>
+              <img src="Logo AgencyWorld.png" alt="AgencyWorld" style={{ width: 22, height: 22, borderRadius: 6, objectFit: 'cover' }} />
+              <span className="text-sm font-semibold" style={{ color: '#ff8c00' }}>Investment Simulator</span>
+            </div>
+            <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-4" style={{ color: '#fff' }}>
+              Dein Kapital.<br />
+              <span style={{ background: 'linear-gradient(90deg, #ff8c00, #ffb347)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Visualisiert.</span>
+            </h1>
+            <p className="text-lg max-w-lg mx-auto font-medium" style={{ color: '#5a5e73' }}>
+              Simuliere dein Investment und beobachte die Kraft des Zinseszins in Echtzeit.
+            </p>
+          </header>
+
+          {/* ── MAIN ── */}
+          <main className="max-w-3xl mx-auto px-4 md:px-6 pb-20 relative" style={{ zIndex: 2 }}>
+
+            {/* INPUT CARD */}
+            <div className="glass-card rounded-3xl p-6 md:p-10 mb-6 fade-in-up">
+              {/* Amount + Badge */}
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider mb-2 block" style={{ color: '#5a5e73' }}>Startkapital</label>
+                  <div
+                    className="inline-flex items-baseline rounded-2xl px-4 py-2 transition-all duration-300"
+                    style={{
+                      border: '1px solid transparent',
+                      cursor: 'text',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.border = '1px solid rgba(255,140,0,0.25)'; e.currentTarget.style.boxShadow = '0 0 20px rgba(255,140,0,0.08)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.border = '1px solid transparent'; e.currentTarget.style.boxShadow = 'none'; }}
+                    onFocusCapture={e => { e.currentTarget.style.border = '1px solid rgba(255,140,0,0.35)'; e.currentTarget.style.boxShadow = '0 0 24px rgba(255,140,0,0.12)'; }}
+                    onBlurCapture={e => { e.currentTarget.style.border = '1px solid transparent'; e.currentTarget.style.boxShadow = 'none'; }}
+                    onClick={e => { const inp = e.currentTarget.querySelector('input'); if (inp) inp.focus(); }}
+                  >
+                    <input type="text" inputMode="numeric"
+                      value={inputFocused ? (amount === 0 ? '' : amount.toString()) : fmtInput(amount)}
+                      onChange={e => { const raw = e.target.value.replace(/\./g, '').replace(/[^0-9]/g, ''); const v = parseInt(raw) || 0; setAmount(v); setSliderVal(a2s(Math.max(S_MIN, Math.min(S_MAX, v)))); }}
+                      onFocus={handleFocus}
+                      onBlur={handleBlur}
+                      className="text-4xl md:text-5xl font-black bg-transparent outline-none tabular-nums"
+                      style={{ border: 'none', color: '#fff', width: `${Math.max(2, (fmtInput(amount) || '0').length * 0.62)}em` }}
+                    />
+                    <span className="text-3xl md:text-4xl font-black flex-shrink-0" style={{ color: '#ff8c00' }}>€</span>
+                  </div>
+                  <p className="text-xs mt-2 ml-1 font-medium" style={{ color: '#5a5e73' }}>Betrag direkt eintippen oder Schieberegler nutzen</p>
+                </div>
+                {effectivePlan && (
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold" style={{ background: 'rgba(255,140,0,0.1)', border: '1px solid rgba(255,140,0,0.2)', color: '#ff8c00', whiteSpace: 'nowrap' }}>
+                      {ic(<><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></>, 16)}
+                      {effectivePlan.name}
+                    </div>
+                    <span className="text-xs font-bold tabular-nums" style={{ color: '#ff8c00' }}>{(effectivePlan.daily * 100).toFixed(2)}% / Tag</span>
+                    {boosterTotal > 0 && (
+                      <span className="text-xs font-medium" style={{ color: '#00e676' }}>
+                        +{fmtC(boosterTotal)} Booster → {fmtC(effectiveCapital)} Gesamt
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Slider */}
+              <div className="mb-8">
+                <input type="range" min="0" max="1000" value={sliderVal} onChange={handleSlider} className="w-full"
+                  style={{ background: `linear-gradient(90deg, #ff8c00 ${sliderPct}%, rgba(255,255,255,0.08) ${sliderPct}%)` }}
+                />
+                <div className="flex justify-between mt-2 text-xs font-medium" style={{ color: '#5a5e73' }}>
+                  <span>{fmtC(S_MIN)}</span>
+                  <span>{fmtC(S_MAX)}</span>
+                </div>
+              </div>
+
+              {/* Gap Warning */}
+              {gap && nextTier && (
+                <div className="rounded-2xl px-5 py-4 flex items-start gap-3 mb-6 pulse-soft" style={{ background: 'rgba(255,140,0,0.06)', border: '1px solid rgba(255,140,0,0.12)' }}>
+                  <span style={{ color: '#ff8c00', marginTop: 2 }}>
+                    {ic(<><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" x2="12" y1="9" y2="13" /><line x1="12" x2="12.01" y1="17" y2="17" /></>, 18)}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: '#ff8c00' }}>Kein passender Plan gefunden</p>
+                    <p className="text-sm mt-0.5" style={{ color: '#8b8fa3' }}>
+                      Bitte auf <strong style={{ color: '#ff8c00' }}>{fmtC(nextTier.min)}</strong> erhöhen für den <strong style={{ color: '#fff' }}>{nextTier.name}</strong>!
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Controls */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <CompoundToggle compound={compound} setCompound={setCompound} enabled={effectiveCapital >= 750} />
+                <button onClick={() => setShowModal(true)}
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer glow-pulse"
+                  style={{ border: 'none', background: '#ff8c00', color: '#0a0b1e' }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" /><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" /><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" /><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" /></svg>
+                  Booster hinzufügen
+                  {boosters.length > 0 && (
+                    <span className="text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold" style={{ background: '#0a0b1e', color: '#ff8c00' }}>{boosters.length}</span>
+                  )}
+                </button>
+              </div>
+
+              {/* Plan Info */}
+              {plan && (
+                <div className="mt-6 pt-6 flex flex-wrap gap-8" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  {[
+                    ['Laufzeit', isTest && upgradePlan ? `${plan.days} + ${upgradePlan.days} Tage` : totalDays + ' Tage'],
+                    ['Tägliche Rate', isTest && upgradePlan ? `${(plan.daily * 100).toFixed(2)}% → ${(upgradePlan.daily * 100).toFixed(2)}%` : (plan.daily * 100).toFixed(2) + '%'],
+                    ['Modus', isTest ? (upgradePlan ? 'Testphase \u2192 Upgrade' : 'Testphase') : (compound ? 'Zinseszins' : 'Linear')],
+                  ].map(([l, v]) => (
+                    <div key={l}>
+                      <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#5a5e73' }}>{l}</span>
+                      <p className="text-lg font-bold mt-0.5" style={{ color: '#fff' }}>{v}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* CHART */}
+            {plan && growthData.length > 0 && (
+              <div className="glass-card rounded-3xl p-6 md:p-10 mb-6 fade-in-up" style={{ animationDelay: '0.1s' }}>
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff8c00, #ff6b00)', boxShadow: '0 0 20px rgba(255,140,0,0.25)' }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0b1e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Wachstumskurve</h2>
+                    <p className="text-xs" style={{ color: '#5a5e73' }}>{isTest && upgradePlan ? `Testphase (${plan.days}T) + ${upgradePlan.name} (${upgradePlan.days}T)` : `${effectiveCompound ? 'Exponentielle' : 'Lineare'} Entwicklung über ${totalDays} Tage`}</p>
+                  </div>
+                </div>
+                <GrowthChart data={growthData} compound={effectiveCompound} days={totalDays} />
+                <div className="flex items-center justify-center gap-6 mt-5 text-xs font-medium" style={{ color: '#5a5e73' }}>
+                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ background: '#ff8c00', boxShadow: '0 0 8px rgba(255,140,0,0.4)' }} /><span>Kapitalentwicklung</span></div>
+                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} /><span>Investiert</span></div>
+                  {effectiveCompound && <div className="flex items-center gap-2"><svg width="10" height="10" viewBox="0 0 10 10"><polygon points="5,0 10,5 5,10 0,5" fill="#ff8c00" /></svg><span>Top-up</span></div>}
+                </div>
+              </div>
+            )}
+
+            {/* HERO STATS */}
+            {plan && (
+              <div className="flex flex-col md:flex-row gap-4 fade-in-up" style={{ animationDelay: '0.2s' }}>
+                <HeroStat label="Investiert" value={totalInv} variant="grey"
+                  icon={ic(<><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></>)}
+                  subtitle={boosters.length > 0 ? `inkl. ${boosters.length} Booster` : 'Startkapital'}
+                />
+                <HeroStat label="Endkapital" value={finalCap} variant="dark"
+                  icon={ic(<><circle cx="12" cy="12" r="10" /><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" /><path d="M12 18V6" /></>)}
+                  subtitle={`nach ${totalDays} Tagen`}
+                />
+                <HeroStat label="Reingewinn" value={profit} variant="green"
+                  icon={ic(<><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></>)}
+                  subtitle={totalInv > 0 ? `${((profit / totalInv) * 100).toFixed(1)}% Rendite` : ''}
+                />
+              </div>
+            )}
+
+            {/* COMPOUND INFO BANNER — only visible when Zinseszins is active AND capital ≥ 750 */}
+            {plan && compound && effectiveCapital >= 750 && (
+              <div className="rounded-2xl p-6 md:p-7 mt-4 fade-in-up" style={{
+                background: 'linear-gradient(135deg, #FF6B00, #FF8C00)',
+                boxShadow: '0 8px 30px rgba(255, 107, 0, 0.3), 0 2px 8px rgba(0,0,0,0.2)',
+                border: '1px solid rgba(255,200,100,0.2)',
+                animationDelay: '0.3s',
+              }}>
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center mt-0.5" style={{ background: 'rgba(0,0,0,0.15)' }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold mb-2" style={{ color: '#fff' }}>Wichtiger Hinweis zum Zinseszins</h3>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.9)', margin: 0 }}>
+                      Diese Simulation berechnet die Reinvestition deiner Gewinne automatisch, sobald 10&nbsp;% deines Portfolio-Mindestbetrags erreicht sind. Beachte bitte: <strong style={{ color: '#fff' }}>In der Realität erfolgt dies nicht automatisch</strong> – du musst die Reinvestition manuell in deinem Konto vornehmen.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* EMPTY STATE */}
+            {!plan && !gap && (
+              <div className="glass-card rounded-3xl p-10 text-center fade-in-up">
+                <div className="text-6xl mb-4">📊</div>
+                <h2 className="text-xl font-bold text-white mb-2">Wähle dein Startkapital</h2>
+                <p style={{ color: '#5a5e73' }}>Bewege den Slider, um deinen Investment-Plan zu berechnen.</p>
+              </div>
+            )}
+          </main>
+
+          <footer className="pt-6 pb-6 px-6">
+            <div className="max-w-3xl mx-auto text-center">
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16, marginBottom: 8 }}>
+                <p className="text-xs font-medium mb-2" style={{ color: '#5a5e73', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Created by</p>
+                <img src="LOGO AW mit Slogan.png" alt="AgencyWorld" style={{ maxWidth: 200, height: 'auto', margin: '0 auto 8px', display: 'block', opacity: 0.85 }} />
+              </div>
+              <p className="text-xs font-medium" style={{ color: '#3d3f52' }}>Investment Simulator · Nur zur Simulation · Keine Anlageberatung</p>
+            </div>
+          </footer>
+
+          <BoosterModal show={showModal} onClose={() => setShowModal(false)} boosters={boosters} setBoosters={setBoosters} maxDays={totalDays || 365} />
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+
+</html>
